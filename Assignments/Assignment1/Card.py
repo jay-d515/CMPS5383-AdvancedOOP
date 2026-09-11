@@ -33,9 +33,6 @@
 #   - If the player does not say "UNO" and is caught by the other player, they must draw 2 cards
 #   - If the is unable to play their last card and needs to draw, but after drawing, is able to play that card,
 #     they still must say "UNO"
-
-import random
-
 class Card:
     def __init__(self, color):
         self.color = color # (Red, Yellow, Green, Blue, or Wild)
@@ -46,9 +43,11 @@ class Card:
         # discard_pile will be defined later in the Game class, so we can use it here to add the card to the discard pile when played
 
     def play(self, game):
+        # the played card is placed into the discard pile
         game.discard_pile.append(self)
     
     def __str__(self):
+        # prints 
         return print(f"{self.color} Card")
         
 class NumberCard(Card):
@@ -82,6 +81,14 @@ class PlusTwoCard(Card):
     """Forces the next player to draw two cards"""
     def __init__(self, color):
         super().__init__(color)
+        
+    def play(self, game):
+        super.play(game)
+        game.advance_turn()
+        victim = game.current_player()
+        for _ in range(2):
+            victim.draw(game.deck)
+        print(f"  -> {victim.name} draws 2 cards and is skipped!")
     
 class SkipCard(Card):
     """Skips the next player's turn"""
@@ -90,8 +97,8 @@ class SkipCard(Card):
         
     def play(self, game):
         super.play(game)
-        game.advance_turn # player index + 1
-        print(f"{game.current_player} has been skipped!")
+        game.advance_turn() # player index + 1
+        print(f"  -> {game.current_player} has been skipped!")
 
     def __str__(self):
         return print(f"{self.color} Skip")      
@@ -100,13 +107,43 @@ class ReverseCard(Card):
     """Reverses the order of play"""
     def __init__(self, color):
         super.__init__(color)
+        
+    def play(self, game):
+        super.play(game)
+        game.direction *= 1
+        print("  -> Turn order reversed!")
+    
+    def __str__(self):
+        return print(f"{self.color} Reverse")
     
 class WildCard(Card):
     """Changes the current color to one of the player's choice"""
     def __init__(self):
-        pass
+        super.__init__("Wild")
+        
+    def matches(self):
+        # Wild cards can always be played
+        return True
+    
+    def play(self, game):
+        game.discard_pile.append(self)
+        new_color = game.current_player().choose_color()
+        game.current_color = new_color
+        print(f"  -> Wild card played. The new color is {new_color}")
+        
+    def __str__(self):
+        return "Wild"
     
 class WildDrawFourCard(WildCard):
     """Changes the current color to one of the player's choice and forces the next player to draw four cards"""
-    def __init__(self):
-        pass
+    def play(self, game):
+        super.play(game)
+        game.advance_turn()
+        victim = game.current_player()
+        for _ in range(4):
+            victim.draw(game.deck)
+        print(f"{victim.name} draws 4 cards and is skipped!")
+    
+    def __str__(self):
+        return "Wild Draw Four"
+        
