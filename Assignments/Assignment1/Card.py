@@ -34,30 +34,32 @@
 #   - If the is unable to play their last card and needs to draw, but after drawing, is able to play that card,
 #     they still must say "UNO"
 class Card:
+    """Represents a card in Uno"""
     def __init__(self, color):
+        """Initializes the card color"""
         self.color = color # (Red, Yellow, Green, Blue, or Wild)
         
     def matches(self, current_color, other_card):
+        """"""
         return self.color == current_color
-    
-        # discard_pile will be defined later in the Game class, so we can use it here to add the card to the discard pile when played
 
     def play(self, game):
-        # the played card is placed into the discard pile
+        """places the played card in the discard pile"""
         game.discard_pile.append(self)
     
     def __str__(self):
-        # prints 
+        """prints the color of the card"""
         return print(f"{self.color} Card")
         
 class NumberCard(Card):
     """Represents a number card in Uno (0-9)"""
     def __init__(self, color, number):
         super().__init__(color)
-        self.number = number
+        self.number = number # (0-9)
     
-    # Checks if the card matches the current color or the number of the card 
+    # Overrides the "matches" method from class Card with new behavior
     def matches(self, current_color, other_card):
+        """Checks if the card matches the current color or the number of the card"""
         # Check if the color of the card matches the current color
         if self.color == current_color:
             # the card matches 
@@ -70,20 +72,23 @@ class NumberCard(Card):
         else:
             return False
     
-    # discard_pile will be defined later in the Game class, so we can use it here to add the card to the discard pile when played
+    # Overrides the "play" method from class Card with new behavior
     def play(self, game):
         super.play(game)
         
+    # Overrides the "__str__" method from class Card with new behavior
     def __str__(self):
+        # prints the card's color and number
         return print(f"{self.color} {self.number} Card")
     
 class PlusTwoCard(Card):
     """Forces the next player to draw two cards"""
     def __init__(self, color):
-        super().__init__(color)
+        super().__init__(color) # inherited from class Card
         
     def play(self, game):
-        super.play(game)
+        # played card is placed in the discard pile
+        super.play(game) # inherited from class Card
         game.advance_turn()
         victim = game.current_player()
         for _ in range(2):
@@ -121,8 +126,10 @@ class WildCard(Card):
     def __init__(self):
         super.__init__("Wild")
         
+    # Overrides the "matches" method from class Card with new behavior
     def matches(self):
-        # Wild cards can always be played
+        """Wild cards will always be a match"""
+        # remains true because wild cards can be played no matter what the previous card was
         return True
     
     def play(self, game):
