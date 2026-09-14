@@ -1,65 +1,41 @@
-# Uno Rules:
-# CARDS-
-# - should be 108 cards; 25 of each color (red, blue, green, yellow) and 8 wild cards
-#   - 19 number cards (1 number 0 and 2 of each number 1-9) of each color
-#   - 6 action cards (2 each of skip, reverse, draw 2) of each color
-#   - 8 wild card (4 each of wild and wild draw 4)
-# SETUP- (will be focused on 2 player gameplay)
-# - Each player is dealt 7 cards from the deck
-#   - The remaining cards are placed face down to form a draw pile
-#   - The top card of te draw pile is turned over to form a discard pile
-# GAMEPLAY-
-# - Randomize which player goes first
-#   - If the first card turned up from the draw pile is an action card, the action 
-#     is applied to the first player
-#   - If the first card turned up from the draw pile is a wild card, the first player must
-#     choose a color for the next player to match
-#   - If the first card turned up from the draw pile is a wild draw 4 card, the first player must
-#     return it to the draw pile shuffle the deck, and turn over a new card
-# - Players take turns playing a card from their hand that matches the card in the discard pile
-#   - If the player has a card that matches the number, color, or the symbol/action of 
-#     the card in the discard pile, they may play that card
-#   - If the player plays a wild card, they must choose a color for the next player to match
-#   - If the player plays a draw 2 or wild draw 4 card, the next player must draw 2 or 4 cards
-#     respectively and forfeit their turn
-#   - If a player plays a skip card, the next player loses their turn
-#   - If a player plays a reverse card, the order of play is reversed
-#   - If a player does not have a playable card OR chooses not to play any of their cards,
-#     they must draw a card from the draw pile
-# - If the draw pile is empty, the discard pile is shuffled and turned over to form a new draw pile
-# - ONLY ONE CARD MAY BE PLAYED PER TURN
-# - The game continues until a player has 1 card left
-# - When a player has 1 card left, they must say "UNO" before the next player takes their turn
-#   - If the player does not say "UNO" and is caught by the other player, they must draw 2 cards
-#   - If the is unable to play their last card and needs to draw, but after drawing, is able to play that card,
-#     they still must say "UNO"
+"""
+card.py
+This file defines the Card hierarchy: the parent Card class and its subclasses.
+- Each subclass overrides play() to provide different behavior.
+"""
+
 class Card:
-    """Represents a card in Uno"""
+    """Parent class. holds shared data and default behavior."""
     def __init__(self, color):
         """Initializes the card color"""
         self.color = color # (Red, Yellow, Green, Blue, or Wild)
         
     def matches(self, other_card, current_color):
-        """"""
+        """Default matching rule: same color counts as a match."""
         return self.color == current_color
 
     def play(self, game):
-        """places the played card in the discard pile"""
+        """This card's effect is applied to the game state.
+           - Base class places the card, and the subclasses override this
+             to add real behavior (skip, reverse, draw, wild card color pick)."""
+             # played card is placed in the discard pile
         game.discard_pile.append(self)
+        # prints which card was placed down
+        print(f"  -> {self} placed down.")
     
     def __str__(self):
-        """prints the color of the card"""
+        """Prints the color of the card"""
         return f"{self.color} Card"
         
 class NumberCard(Card):
-    """Represents a number card in Uno (0-9)"""
+    """Represents a standard number card (0-9)"""
     def __init__(self, color, number):
-        super().__init__(color)
+        super().__init__(color) # inherited from class Card
         self.number = number # (0-9)
     
-    # Overrides the "matches" method from class Card with new behavior
     def matches(self, other_card, current_color):
-        """Checks if the card matches the current color or the number of the card"""
+        """Overrides the base class "matches" method to check if the card matches
+           the current color AND the number."""
         # Check if the color of the card matches the current color
         if self.color == current_color:
             # the card matches 
@@ -72,85 +48,125 @@ class NumberCard(Card):
         else:
             return False
     
-    # Overrides the "play" method from class Card with new behavior
     def play(self, game):
-        super().play(game)
+        """Uses the same behvaior from the base class."""
+        # played card is placed in the discard pile
+        super().play(game) # inherited from class Card
         
-    # Overrides the "__str__" method from class Card with new behavior
     def __str__(self):
-        # prints the card's color and number
+        """Overrides the base class "__str__" method to print the color AND
+           number of the card."""
         return f"{self.color} {self.number} Card"
     
 class PlusTwoCard(Card):
-    """Forces the next player to draw two cards"""
+    """Forces the next player to draw two cards and lose their turn."""
     def __init__(self, color):
         super().__init__(color) # inherited from class Card
         
     def play(self, game):
+        """Overrides the base class "play" method to force the next player
+           to draw 2 cards, and have their turn skipped."""
         # played card is placed in the discard pile
         super().play(game) # inherited from class Card
+        # advances to the next player's (i.e. the victim's) turn,
+        # who has to draw 2 cards
         game.advance_turn()
         victim = game.current_player()
+        # victim draws 2 cards from the deck
         for _ in range(2):
             victim.draw(game.deck)
+            # print which player was forced to draw 2 cards
         print(f"  -> {victim.name} draws 2 cards and is skipped!")
+    
+    def __str__(self):
+        """Overrides the base class "__str__" method to print the plus
+           two card."""
+        return f"{self.color} Plus Two"
     
 class SkipCard(Card):
     """Skips the next player's turn"""
     def __init__(self, color):
-        super().__init__(color)
+        super().__init__(color) # inherited from class Card
         
     def play(self, game):
-        super().play(game)
-        game.advance_turn() # player index + 1
+        """Overrides the base class "play" method to skip the next player's turn."""
+        # played card is placed in the discard pile
+        super().play(game) # inherited from class Card
+        # advances to the next player's (i.e. the victim's) turn,
+        # who will be skipped
+        game.advance_turn()
+        # prints out which player's turn was skipped
         print(f"  -> {game.current_player().name} has been skipped!")
 
     def __str__(self):
+        """Overrides the base class "__str__" method to print the skip card."""
         return f"{self.color} Skip"      
     
 class ReverseCard(Card):
-    """Reverses the order of play"""
+    """Reverses the order of play."""
     def __init__(self, color):
-        super().__init__(color)
+        super().__init__(color) # inherited from class Card
         
     def play(self, game):
-        super().play(game)
+        """Overrides the base class "play" method to reverse the order of play."""
+        # played card is placed in the discard pile
+        super().play(game) # inherited from class Card
+        # reverses the game direction
         game.direction *= -1
+        # prints a message about the game order being reversed
         print("  -> Turn order reversed!")
     
     def __str__(self):
+        """Overrides the base class "__str__" method to print the reverse card."""
         return f"{self.color} Reverse"
     
 class WildCard(Card):
-    """Changes the current color to one of the player's choice"""
+    """Changes the current color to one of the player's choice."""
     def __init__(self):
-        super().__init__("Wild")
+        super().__init__("Wild") # inherited from class Card
         
-    # Overrides the "matches" method from class Card with new behavior
     def matches(self, other_card, current_color):
-        """Wild cards will always be a match"""
-        # remains true because wild cards can be played no matter what the previous card was
+        """Overrides the base class "matches" method to allow wild cards to always
+           be played."""
+        # remains true because wild cards can be played no matter what the
+        # previous card was
         return True
     
     def play(self, game):
-        game.discard_pile.append(self)
+        """Overrides the base class "play" method to change the current color
+           to one of the player's choice."""
+        # played card is placed in the discard pile
+        super().play(game) # inherited from class Card
+        # current color is changed to one of the player's choice
         new_color = game.current_player().choose_color()
         game.current_color = new_color
+        # prints what the new color is
         print(f"  -> Wild card played. The new color is {new_color}")
         
     def __str__(self):
+        """Overrides the base class "__str__" method to print the wild card."""
         return "Wild"
     
 class WildDrawFourCard(WildCard):
-    """Changes the current color to one of the player's choice and forces the next player to draw four cards"""
+    """Changes the current color to one of the player's choice and forces
+       the next player to draw four cards."""
     def play(self, game):
-        super().play(game)
+        """Overrides the base class "play" method to change the current color
+           to one of the player's choice, and force the next player to draw 4 cards."""
+        # played card is placed in the discard pile
+        super().play(game) # inherited from class Card
+        # advances to the next player's (i.e. the victim's) turn,
+        # who has to draw 4 cards
         game.advance_turn()
         victim = game.current_player()
+        # victim draws 4 cards from the deck
         for _ in range(4):
             victim.draw(game.deck)
+        # prints which player was forced to draw 4 cards
         print(f"{victim.name} draws 4 cards and is skipped!")
     
     def __str__(self):
+        """Overrides the base class "__str__" method to print the wild
+           draw four card."""
         return "Wild Draw Four"
         
