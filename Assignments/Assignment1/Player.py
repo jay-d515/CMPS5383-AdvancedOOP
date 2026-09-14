@@ -7,7 +7,7 @@ Game coordinator calls its methods.
 
 # imports the random library
 import random
-# imports the Wildcard child class from parent class Card
+# imports the Wildcard child class
 from card import WildCard
 
 class Player:

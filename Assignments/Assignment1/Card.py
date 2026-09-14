@@ -28,7 +28,7 @@ class Card:
         return f"{self.color} Card"
         
 class NumberCard(Card):
-    """Represents a standard number card (0-9)."""
+    """Represents a standard number card in Uno (0-9)."""
     def __init__(self, color, number):
         """Initializes the card color and number."""
         super().__init__(color) # inherited from class Card
@@ -55,7 +55,8 @@ class NumberCard(Card):
         return f"{self.color} {self.number} Card"
     
 class PlusTwoCard(Card):
-    """Forces the next player to draw two cards and lose their turn."""
+    """Represents and action card in Uno which forces the next player to draw two
+       cards and lose their turn."""
     def __init__(self, color):
         """Initializes the card color."""
         super().__init__(color) # inherited from class Card
@@ -81,7 +82,7 @@ class PlusTwoCard(Card):
         return f"{self.color} Plus Two"
     
 class SkipCard(Card):
-    """Skips the next player's turn"""
+    """Represents an action card in Uno which skips the next player's turn."""
     def __init__(self, color):
         """Initializes the card color."""
         super().__init__(color) # inherited from class Card
@@ -102,7 +103,7 @@ class SkipCard(Card):
         return f"{self.color} Skip"      
     
 class ReverseCard(Card):
-    """Reverses the order of play."""
+    """Represents an action card in Uno which reverses the order of play."""
     def __init__(self, color):
         """Initializes the card color."""
         super().__init__(color) # inherited from class Card
@@ -122,7 +123,8 @@ class ReverseCard(Card):
         return f"{self.color} Reverse"
     
 class WildCard(Card):
-    """Changes the current color to one of the player's choice."""
+    """Represents a wild card in Uno which changes the current color to one of
+       the player's choice."""
     def __init__(self):
         """Initializes the card color to Wild."""
         super().__init__("Wild") # inherited from class Card
@@ -151,8 +153,11 @@ class WildCard(Card):
         return "Wild"
     
 class WildDrawFourCard(WildCard):
-    """Changes the current color to one of the player's choice and forces
-       the next player to draw four cards."""
+    """Represents a wild card in Uno which changes the current color to one of the
+       player's choice and forces the next player to draw four cards."""
+    def __init__(self):
+        super().__init__()   
+       
     def play(self, game):
         """Overrides the base class "play" method to change the current color
            to one of the player's choice, and force the next player to draw 4 cards."""
