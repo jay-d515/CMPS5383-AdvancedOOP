@@ -7,7 +7,7 @@ This file defines the Card hierarchy: the parent Card class and its subclasses.
 class Card:
     """Parent class. holds shared data and default behavior."""
     def __init__(self, color):
-        """Initializes the card color"""
+        """Initializes the card color."""
         self.color = color # (Red, Yellow, Green, Blue, or Wild)
         
     def matches(self, other_card, current_color):
@@ -24,12 +24,13 @@ class Card:
         print(f"  -> {self} placed down.")
     
     def __str__(self):
-        """Prints the color of the card"""
+        """Prints the color of the card."""
         return f"{self.color} Card"
         
 class NumberCard(Card):
-    """Represents a standard number card (0-9)"""
+    """Represents a standard number card (0-9)."""
     def __init__(self, color, number):
+        """Initializes the card color and number."""
         super().__init__(color) # inherited from class Card
         self.number = number # (0-9)
     
@@ -61,6 +62,7 @@ class NumberCard(Card):
 class PlusTwoCard(Card):
     """Forces the next player to draw two cards and lose their turn."""
     def __init__(self, color):
+        """Initializes the card color."""
         super().__init__(color) # inherited from class Card
         
     def play(self, game):
@@ -68,8 +70,8 @@ class PlusTwoCard(Card):
            to draw 2 cards, and have their turn skipped."""
         # played card is placed in the discard pile
         super().play(game) # inherited from class Card
-        # advances to the next player's (i.e. the victim's) turn,
-        # who has to draw 2 cards
+        # moves to the next player's (i.e. the victim's) turn,
+        # that has to draw 2 cards
         game.advance_turn()
         victim = game.current_player()
         # victim draws 2 cards from the deck
@@ -86,14 +88,15 @@ class PlusTwoCard(Card):
 class SkipCard(Card):
     """Skips the next player's turn"""
     def __init__(self, color):
+        """Initializes the card color."""
         super().__init__(color) # inherited from class Card
         
     def play(self, game):
         """Overrides the base class "play" method to skip the next player's turn."""
         # played card is placed in the discard pile
         super().play(game) # inherited from class Card
-        # advances to the next player's (i.e. the victim's) turn,
-        # who will be skipped
+        # moves to the next player's (i.e. the victim's) turn,
+        # that will be skipped
         game.advance_turn()
         # prints out which player's turn was skipped
         print(f"  -> {game.current_player().name} has been skipped!")
@@ -105,6 +108,7 @@ class SkipCard(Card):
 class ReverseCard(Card):
     """Reverses the order of play."""
     def __init__(self, color):
+        """Initializes the card color."""
         super().__init__(color) # inherited from class Card
         
     def play(self, game):
@@ -123,6 +127,7 @@ class ReverseCard(Card):
 class WildCard(Card):
     """Changes the current color to one of the player's choice."""
     def __init__(self):
+        """Initializes the card color to Wild."""
         super().__init__("Wild") # inherited from class Card
         
     def matches(self, other_card, current_color):
@@ -155,8 +160,8 @@ class WildDrawFourCard(WildCard):
            to one of the player's choice, and force the next player to draw 4 cards."""
         # played card is placed in the discard pile
         super().play(game) # inherited from class Card
-        # advances to the next player's (i.e. the victim's) turn,
-        # who has to draw 4 cards
+        # moves to the next player's (i.e. the victim's) turn,
+        # that has to draw 4 cards
         game.advance_turn()
         victim = game.current_player()
         # victim draws 4 cards from the deck
