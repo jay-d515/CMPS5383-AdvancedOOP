@@ -63,7 +63,7 @@ class Player:
         return random.choice(["Red", "Yellow", "Green", "Blue"])
     
     def __str__(self):
-        """Prints a player's name."""
+        """Returns a string representation of a Player object."""
         return self.name
     
     

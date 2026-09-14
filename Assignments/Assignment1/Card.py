@@ -24,7 +24,7 @@ class Card:
         print(f"  -> {self} placed down.")
     
     def __str__(self):
-        """Prints the color of the card."""
+        """returns a string represenation of a Card object."""
         return f"{self.color} Card"
         
 class NumberCard(Card):
@@ -55,8 +55,8 @@ class NumberCard(Card):
         super().play(game) # inherited from class Card
         
     def __str__(self):
-        """Overrides the base class "__str__" method to print the color AND
-           number of the card."""
+        """Overrides the base class "__str__" method to return a string representation
+           of a NumberCard object card."""
         return f"{self.color} {self.number} Card"
     
 class PlusTwoCard(Card):
@@ -81,8 +81,8 @@ class PlusTwoCard(Card):
         print(f"  -> {victim.name} draws 2 cards and is skipped!")
     
     def __str__(self):
-        """Overrides the base class "__str__" method to print the plus
-           two card."""
+        """Overrides the base class "__str__" method to return a string representation
+           of a PlusTwoCard object."""
         return f"{self.color} Plus Two"
     
 class SkipCard(Card):
@@ -102,7 +102,8 @@ class SkipCard(Card):
         print(f"  -> {game.current_player().name} has been skipped!")
 
     def __str__(self):
-        """Overrides the base class "__str__" method to print the skip card."""
+        """Overrides the base class "__str__" method to return a string representation
+           of a SkipCard object."""
         return f"{self.color} Skip"      
     
 class ReverseCard(Card):
@@ -121,7 +122,8 @@ class ReverseCard(Card):
         print("  -> Turn order reversed!")
     
     def __str__(self):
-        """Overrides the base class "__str__" method to print the reverse card."""
+        """Overrides the base class "__str__" method to return a string representation
+           of a ReverseCard object."""
         return f"{self.color} Reverse"
     
 class WildCard(Card):
@@ -149,7 +151,8 @@ class WildCard(Card):
         print(f"  -> Wild card played. The new color is {new_color}")
         
     def __str__(self):
-        """Overrides the base class "__str__" method to print the wild card."""
+        """Overrides the base class "__str__" method to return a string representation
+           of a WildCard object."""
         return "Wild"
     
 class WildDrawFourCard(WildCard):
@@ -171,7 +174,7 @@ class WildDrawFourCard(WildCard):
         print(f"{victim.name} draws 4 cards and is skipped!")
     
     def __str__(self):
-        """Overrides the base class "__str__" method to print the wild
-           draw four card."""
+        """Overrides the base class "__str__" method to return a string representation
+           of a WildDrawFourCard object."""
         return "Wild Draw Four"
         
