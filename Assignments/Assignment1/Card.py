@@ -24,7 +24,7 @@ class Card:
         print(f"  -> {self} placed down.")
     
     def __str__(self):
-        """returns a string represenation of a Card object."""
+        """returns a string representation of a Card object."""
         return f"{self.color} Card"
         
 class NumberCard(Card):
