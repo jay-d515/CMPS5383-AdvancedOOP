@@ -48,11 +48,6 @@ class NumberCard(Card):
         # The card does not match the current color or the number of the other card
         else:
             return False
-    
-    def play(self, game):
-        """Uses the same behvaior from the base class."""
-        # played card is placed in the discard pile
-        super().play(game) # inherited from class Card
         
     def __str__(self):
         """Overrides the base class "__str__" method to return a string representation
