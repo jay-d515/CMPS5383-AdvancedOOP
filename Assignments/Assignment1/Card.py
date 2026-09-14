@@ -39,7 +39,7 @@ class Card:
         """Initializes the card color"""
         self.color = color # (Red, Yellow, Green, Blue, or Wild)
         
-    def matches(self, current_color, other_card):
+    def matches(self, other_card, current_color):
         """"""
         return self.color == current_color
 
@@ -49,7 +49,7 @@ class Card:
     
     def __str__(self):
         """prints the color of the card"""
-        return print(f"{self.color} Card")
+        return f"{self.color} Card"
         
 class NumberCard(Card):
     """Represents a number card in Uno (0-9)"""
@@ -58,7 +58,7 @@ class NumberCard(Card):
         self.number = number # (0-9)
     
     # Overrides the "matches" method from class Card with new behavior
-    def matches(self, current_color, other_card):
+    def matches(self, other_card, current_color):
         """Checks if the card matches the current color or the number of the card"""
         # Check if the color of the card matches the current color
         if self.color == current_color:
@@ -74,12 +74,12 @@ class NumberCard(Card):
     
     # Overrides the "play" method from class Card with new behavior
     def play(self, game):
-        super.play(game)
+        super().play(game)
         
     # Overrides the "__str__" method from class Card with new behavior
     def __str__(self):
         # prints the card's color and number
-        return print(f"{self.color} {self.number} Card")
+        return f"{self.color} {self.number} Card"
     
 class PlusTwoCard(Card):
     """Forces the next player to draw two cards"""
@@ -88,7 +88,7 @@ class PlusTwoCard(Card):
         
     def play(self, game):
         # played card is placed in the discard pile
-        super.play(game) # inherited from class Card
+        super().play(game) # inherited from class Card
         game.advance_turn()
         victim = game.current_player()
         for _ in range(2):
@@ -101,33 +101,33 @@ class SkipCard(Card):
         super().__init__(color)
         
     def play(self, game):
-        super.play(game)
+        super().play(game)
         game.advance_turn() # player index + 1
-        print(f"  -> {game.current_player} has been skipped!")
+        print(f"  -> {game.current_player().name} has been skipped!")
 
     def __str__(self):
-        return print(f"{self.color} Skip")      
+        return f"{self.color} Skip"      
     
 class ReverseCard(Card):
     """Reverses the order of play"""
     def __init__(self, color):
-        super.__init__(color)
+        super().__init__(color)
         
     def play(self, game):
-        super.play(game)
-        game.direction *= 1
+        super().play(game)
+        game.direction *= -1
         print("  -> Turn order reversed!")
     
     def __str__(self):
-        return print(f"{self.color} Reverse")
+        return f"{self.color} Reverse"
     
 class WildCard(Card):
     """Changes the current color to one of the player's choice"""
     def __init__(self):
-        super.__init__("Wild")
+        super().__init__("Wild")
         
     # Overrides the "matches" method from class Card with new behavior
-    def matches(self):
+    def matches(self, other_card, current_color):
         """Wild cards will always be a match"""
         # remains true because wild cards can be played no matter what the previous card was
         return True
@@ -144,7 +144,7 @@ class WildCard(Card):
 class WildDrawFourCard(WildCard):
     """Changes the current color to one of the player's choice and forces the next player to draw four cards"""
     def play(self, game):
-        super.play(game)
+        super().play(game)
         game.advance_turn()
         victim = game.current_player()
         for _ in range(4):

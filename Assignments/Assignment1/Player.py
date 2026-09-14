@@ -1,8 +1,9 @@
-from Card import Card, NumberCard, PlusTwoCard, SkipCard, ReverseCard, WildCard, WildDrawFourCard
 import random
 
+from card import WildCard
+
 class Player:
-    def __init__(self, name, hand):
+    def __init__(self, name):
         self.name = name
         self.hand = []
         
@@ -11,21 +12,25 @@ class Player:
             card = deck.pop()
             self.hand.append(card)
             return card
-        else:
-            return None   
+        return None
+      
     def has_playable_card(self, current_card, current_color):
         return any(c.matches(current_card, current_color) for c in self.hand)
     
     def choose_card(self, current_card, current_color):
         for card in self.hand:
-            if card.matches(current_card, current_color):
+            if not isinstance(card, WildCard) and card.matches(current_card, current_color):
+                return card
+        
+        for card in self.hand:
+            if isinstance(card, WildCard):
                 return card
         return None
     
     def choose_color(self):
         counts = {}
         for c in self.hand:
-            if c != "Wild":
+            if c.color != "Wild":
                 counts[c.color] = counts.get(c.color, 0) + 1   
         if counts:
             return max(counts, key=counts.get)
