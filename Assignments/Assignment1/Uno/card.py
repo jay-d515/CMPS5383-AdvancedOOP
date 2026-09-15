@@ -3,6 +3,18 @@ card.py
 This file defines the Card hierarchy: the parent Card class and its subclasses.
 - Each subclass overrides play() to provide different behavior.
 """
+# imports the colorama library
+from colorama import  init, Fore, Style
+# so colors don't bleed into the next print
+init(autoreset=True)
+# maps the color string to the ANSI color codes
+COLOR_MAP = {
+    "Red": Fore.RED,
+    "Yellow": Fore.YELLOW,
+    "Green": Fore.GREEN,
+    "Blue": Fore.BLUE,
+    "Wild": Fore.MAGENTA,
+}
 
 class Card:
     """Parent class. holds shared data and default behavior."""
@@ -25,7 +37,8 @@ class Card:
     
     def __str__(self):
         """returns a string representation of a Card object."""
-        return f"{self.color} Card"
+        color_code = COLOR_MAP.get(self.color, "")
+        return f"{color_code}{self.color} Card Card{Style.RESET_ALL}"
         
 class NumberCard(Card):
     """Represents a standard number card in Uno (0-9)."""
@@ -52,7 +65,8 @@ class NumberCard(Card):
     def __str__(self):
         """Overrides the base class "__str__" method to return a string representation
            of a NumberCard object card."""
-        return f"{self.color} {self.number} Card"
+        color_code = COLOR_MAP.get(self.color, "")
+        return f"{color_code}{self.color} {self.number} Card{Style.RESET_ALL}"
     
 class PlusTwoCard(Card):
     """Represents and action card in Uno which forces the next player to draw two
@@ -79,7 +93,8 @@ class PlusTwoCard(Card):
     def __str__(self):
         """Overrides the base class "__str__" method to return a string representation
            of a PlusTwoCard object."""
-        return f"{self.color} Plus Two"
+        color_code = COLOR_MAP.get(self.color, "")
+        return f"{color_code}{self.color} Plus Two{Style.RESET_ALL}"
     
 class SkipCard(Card):
     """Represents an action card in Uno which skips the next player's turn."""
@@ -100,7 +115,8 @@ class SkipCard(Card):
     def __str__(self):
         """Overrides the base class "__str__" method to return a string representation
            of a SkipCard object."""
-        return f"{self.color} Skip"      
+        color_code = COLOR_MAP.get(self.color, "")
+        return f"{color_code}{self.color} Skip{Style.RESET_ALL}"      
     
 class ReverseCard(Card):
     """Represents an action card in Uno which reverses the order of play."""
@@ -120,7 +136,8 @@ class ReverseCard(Card):
     def __str__(self):
         """Overrides the base class "__str__" method to return a string representation
            of a ReverseCard object."""
-        return f"{self.color} Reverse"
+        color_code = COLOR_MAP.get(self.color, "")
+        return f"{color_code}{self.color} Reverse{Style.RESET_ALL}"
     
 class WildCard(Card):
     """Represents a wild card in Uno which changes the current color to one of
@@ -150,13 +167,11 @@ class WildCard(Card):
     def __str__(self):
         """Overrides the base class "__str__" method to return a string representation
            of a WildCard object."""
-        return "Wild"
+        return f"{COLOR_MAP['Wild']}Wild{Style.RESET_ALL}"
     
 class WildDrawFourCard(WildCard):
     """Represents a wild card in Uno which changes the current color to one of the
-       player's choice and forces the next player to draw four cards."""
-    def __init__(self):
-        super().__init__()   
+       player's choice and forces the next player to draw four cards."""  
        
     def play(self, game):
         """Overrides the base class "play" method to change the current color
@@ -176,5 +191,5 @@ class WildDrawFourCard(WildCard):
     def __str__(self):
         """Overrides the base class "__str__" method to return a string representation
            of a WildDrawFourCard object."""
-        return "Wild Draw Four"
+        return f"{COLOR_MAP['Wild']}Wild Draw Four{Style.RESET_ALL}"
         
