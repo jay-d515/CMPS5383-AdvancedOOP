@@ -35,11 +35,12 @@ class Game:
         """Builds a deck of 108 cards.
            - 76 numbered cards
              - 19 cards of each color
-               - 1 number 0 card and two sets of cards numbered 1-9
+               - 1 number zero card and two sets of cards numbered 1-9
            - 24 action cards
-             - 2 of each action card (skip, reverse, plus two)
-             - 6 total for each color
-           - 8 Wild cards"""
+             - 2 of each action card (skip, reverse, and plus two)
+             - 6 total of each color
+           - 8 Wild cards
+             - 4 wild cards and 4 wild draw four cards"""
         for color in self.COLORS:
             # adds 1 zero of each color to the deck
             self.deck.append(NumberCard(color, 0))
@@ -60,14 +61,15 @@ class Game:
         random.shuffle(self.deck)
         
     def _deal_starting_hands(self, hand_size=7):
-        """deals all player's 7 cards each from the deck."""
+        """deals all players 7 cards each from the deck."""
         for player in self.players:
             # deals 7 cards to each player
             for _ in range(hand_size):
                 player.draw(self.deck)
             
     def _flip_starting_card(self):
-        """Flips the top card, from the draw pile, to start the game."""
+        """Flips the top card, from the draw pile and places it in the discard pile, 
+           to start the game."""
         # takes the card from the top of the deck
         top = self.deck.pop()
         # if the flipped card is a wild
@@ -81,7 +83,7 @@ class Game:
         self.current_color = top.color
         
     def current_player(self):
-        """Returns the name of a current player."""
+        """Returns the name of a player in the game."""
         return self.players[self.turn_index]
     
     def advance_turn(self):
@@ -93,7 +95,8 @@ class Game:
         return self.discard_pile[-1]
     
     def reshuffle_if_needed(self):
-        """Reshuffles the discard pile if there are no more cards is the draw pile."""
+        """Creates a new draw pile by reshuffling the discard pile. Uses the last played
+           card as the new top card of the discard pile."""
         if not self.deck:
             # removes the last played card from the discard pile
             top = self.discard_pile.pop()
@@ -105,7 +108,7 @@ class Game:
             random.shuffle(self.deck)
     
     def play_turn(self):
-        """Runs through the turn of a singular player."""
+        """Runs through the turn of a single player."""
         player = self.current_player()
         top = self.top_card()
         # prints which player's turn it is, what the top card is, and the

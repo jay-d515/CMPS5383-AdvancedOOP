@@ -7,7 +7,10 @@ Entry point for the program.
 from game import Game
 
 if __name__ == "__main__":
+    # variable that defines the lsit of players
+    players = ["Jadyn", "Maggie", "Gracie", "Isa"]
     # creates a new game
-    game = Game(["Jadyn", "Maggie", "Gracie"])
+    game = Game(players)
     # runs a game of UNO
     game.run()
+    
