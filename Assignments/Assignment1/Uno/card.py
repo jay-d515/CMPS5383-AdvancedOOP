@@ -171,8 +171,7 @@ class WildCard(Card):
     
 class WildDrawFourCard(WildCard):
     """Represents a wild card in Uno which changes the current color to one of the
-       player's choice and forces the next player to draw four cards."""  
-       
+       player's choice and forces the next player to draw four cards."""    
     def play(self, game):
         """Overrides the base class "play" method to change the current color
            to one of the player's choice, and force the next player to draw 4 cards."""
