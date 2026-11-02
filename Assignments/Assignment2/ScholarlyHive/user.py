@@ -1,68 +1,72 @@
-from __future__ import annotations
+"""
+user.py
+Defines the User hierarchy. User is the parent class holding shared
+account data and behavior. Student, TA, and Professor override
+permission-related behavior to demonstrate meaningful inheritance.
+"""
 
-import hashlib
-import os
-from abc import ABC, abstractmethod
-from datetime import datetime
+from security import hash_password, verify_password
 
-# -------------------------------------------------------------
-# Users
-# -------------------------------------------------------------
+
 class User:
-    """Parent class. Subclasses overried the permission methods."""
-    role = "User"
-    
-    def __init__(self, name:str, school_id:str, email:str,
-                 password:str, department:str):
+    """Parent class. Shared account data and default permissions."""
+
+    def __init__(self, name, school_id, email):
         self.name = name
         self.school_id = school_id
-        self.email = email.lower()
-        self.department = department
-        self._salt = os.urandom(16)
-        self._password_hash = self._hash(password)
-        self.communities: list[Community] = []
-        
-    def _hash(self, password:str) -> bytes:
-        return hashlib.pbkdf2_hmac("sha256", password.encode(),
-                                   self._salt, 100_000)
-    
-    def check_password(self, password:str) -> bool:
-        return self._hash(password) == self._password_hash
-    
-    # -- Permission methods to be overridden by subclasses --
-    def can_create_community(self) -> bool:
-        """Can this user create a community?"""
+        self.email = email
+        self.communities = []  # composition: a User has Community memberships
+        self.logged_in = False
+        self.password_hash = None  # never store the plaintext password
+
+    def set_password(self, password):
+        """Hash and store a password (the plaintext is not kept)."""
+        self.password_hash = hash_password(password)
+
+    def check_password(self, password):
+        """Return True if the given plaintext matches the stored hash."""
+        if self.password_hash is None:
+            return False
+        return verify_password(password, self.password_hash)
+
+    def login(self):
+        self.logged_in = True
+        print(f"  -> {self.name} logged in.")
+
+    def logout(self):
+        self.logged_in = False
+        print(f"  -> {self.name} logged out.")
+
+    def join_community(self, community):
+        """Asks the community to add this user, then tracks the membership."""
+        if community.add_member(self):
+            self.communities.append(community)
+            print(f"  -> {self.name} joined {community.name}.")
+        else:
+            print(f"  -> {self.name} could not join {community.name}.")
+
+    def can_verify_resources(self):
+        """Default permission: most users cannot verify/pin resources."""
         return False
-    
-    def can_moderate(self) -> bool:
-        """Can this user remove other people's posts?"""
-        return False
-    
-    def profile(self) -> str:
-        names = ", ".join(c.name for c in self.communities) or "none yet"
-        return (f"{self.name} ({self.role})\n"
-                f"  Email: {self.email}\n"
-                f"  ID: {self.school_id}\n"
-                f"  Department: {self.department}\n"
-                f"  Communities: {names}")
-    
-    def __str__(self) -> str:
-        return f"<{self.role} {self.name}>"
-    
+
+    def __str__(self):
+        return self.name
+
+
 class Student(User):
-    role = "Student"
-    
+    """A standard student account. Uses all default User behavior."""
+    pass
+
+
 class TA(User):
-    role = "TA"
-    
-    def can_moderate(self) -> bool:
+    """A teaching assistant. Can verify resources, same as a Professor."""
+
+    def can_verify_resources(self):
         return True
-    
+
+
 class Professor(User):
-    role = "Professor"
-    
-    def can_create_community(self) -> bool:
+    """A professor account. Can verify resources."""
+
+    def can_verify_resources(self):
         return True
-    
-    def can_moderate(self) -> bool:
-            return True
