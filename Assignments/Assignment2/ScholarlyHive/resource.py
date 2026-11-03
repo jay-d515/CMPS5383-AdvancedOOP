@@ -32,6 +32,7 @@ class Resource:
     """Parent class. Shared metadata for anything posted to a community."""
 
     def __init__(self, title, uploader):
+        self.id = None  # assigned by Database when the resource is saved
         self.title = title
         self.uploader = uploader  # a User object
         self.verified = False
@@ -77,5 +78,6 @@ class DiscussionPost(Resource, Commentable):
         self.comments = []
 
     def display(self):
-        print(f"  [Discussion] {self.title} (by {self.uploader.name}): {self.body}")
+        tag = " [VERIFIED]" if self.verified else ""
+        print(f"  [Discussion] {self.title}{tag} (by {self.uploader.name}): {self.body}")
         self.show_comments()

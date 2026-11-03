@@ -1,6 +1,8 @@
 """
 database.py
-SQLite persistence layer (Week 3: users and sessions).
+SQLite persistence layer.
+  Week 3: users and sessions.
+  Week 4: communities, enrollments, memberships, and resources.
 
 Design rules:
 - Only the Platform talks to Database. User, Session, etc. never touch it,
@@ -16,8 +18,20 @@ from datetime import datetime
 
 from user import Student, TA, Professor
 from session import Session
+from community import DepartmentCommunity, CourseCommunity
+from resource import FileResource, LinkResource, DiscussionPost
 
 ROLES = {"Student": Student, "TA": TA, "Professor": Professor}
+
+# Subclass-specific field stored in the single "detail" column.
+# One table per hierarchy ("single-table inheritance"): the `kind` column
+# records the class name, and `detail` holds that class's extra field.
+COMMUNITY_DETAIL = {"DepartmentCommunity": "department", "CourseCommunity": "course_code"}
+RESOURCE_KINDS = {
+    "FileResource": (FileResource, "filename"),
+    "LinkResource": (LinkResource, "url"),
+    "DiscussionPost": (DiscussionPost, "body"),
+}
 
 
 class Database:
@@ -44,6 +58,41 @@ class Database:
                     school_id  TEXT NOT NULL REFERENCES users(school_id),
                     start_time TEXT NOT NULL,
                     expires_at TEXT NOT NULL
+                )
+            """)
+            self.conn.execute("""
+                CREATE TABLE IF NOT EXISTS communities (
+                    id     INTEGER PRIMARY KEY AUTOINCREMENT,
+                    kind   TEXT NOT NULL,
+                    name   TEXT NOT NULL UNIQUE,
+                    detail TEXT
+                )
+            """)
+            # Enrollment lists may name students who have not registered yet,
+            # so enrollments deliberately has no foreign key to users.
+            self.conn.execute("""
+                CREATE TABLE IF NOT EXISTS enrollments (
+                    community_id INTEGER NOT NULL REFERENCES communities(id),
+                    school_id    TEXT NOT NULL,
+                    PRIMARY KEY (community_id, school_id)
+                )
+            """)
+            self.conn.execute("""
+                CREATE TABLE IF NOT EXISTS memberships (
+                    community_id INTEGER NOT NULL REFERENCES communities(id),
+                    school_id    TEXT NOT NULL REFERENCES users(school_id),
+                    PRIMARY KEY (community_id, school_id)
+                )
+            """)
+            self.conn.execute("""
+                CREATE TABLE IF NOT EXISTS resources (
+                    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                    community_id INTEGER NOT NULL REFERENCES communities(id),
+                    kind         TEXT NOT NULL,
+                    title        TEXT NOT NULL,
+                    uploader_id  TEXT NOT NULL REFERENCES users(school_id),
+                    verified     INTEGER NOT NULL DEFAULT 0,
+                    detail       TEXT
                 )
             """)
 
@@ -123,6 +172,111 @@ class Database:
                 datetime.fromisoformat(expires),
             ))
         return sessions
+
+    # ---------------------------------------------------------------
+    # Communities, memberships, resources (Week 4)
+    # ---------------------------------------------------------------
+    def save_community(self, community):
+        """Insert a new community (and its enrollment list) and set community.id."""
+        if community.id is not None:
+            return  # already saved
+        kind = type(community).__name__
+        if kind not in COMMUNITY_DETAIL:
+            raise ValueError(f"Unsupported community type: {kind}")
+        detail = getattr(community, COMMUNITY_DETAIL[kind])
+        with self.conn:
+            cursor = self.conn.execute(
+                "INSERT INTO communities (kind, name, detail) VALUES (?, ?, ?)",
+                (kind, community.name, detail),
+            )
+            new_id = cursor.lastrowid
+            for school_id in getattr(community, "enrolled_ids", []):
+                self.conn.execute(
+                    "INSERT OR IGNORE INTO enrollments (community_id, school_id) VALUES (?, ?)",
+                    (new_id, school_id),
+                )
+        community.id = new_id  # only set once the transaction succeeded
+
+    def save_membership(self, community, user):
+        with self.conn:
+            self.conn.execute(
+                "INSERT OR IGNORE INTO memberships (community_id, school_id) VALUES (?, ?)",
+                (community.id, user.school_id),
+            )
+
+    def save_resource(self, resource, community):
+        """Insert a new resource into a saved community and set resource.id."""
+        if community.id is None:
+            raise ValueError(f"Community '{community.name}' has not been saved yet.")
+        kind = type(resource).__name__
+        if kind not in RESOURCE_KINDS:
+            raise ValueError(f"Unsupported resource type: {kind}")
+        _, field = RESOURCE_KINDS[kind]
+        with self.conn:
+            cursor = self.conn.execute(
+                """INSERT INTO resources
+                   (community_id, kind, title, uploader_id, verified, detail)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (community.id, kind, resource.title, resource.uploader.school_id,
+                 int(resource.verified), getattr(resource, field)),
+            )
+            new_id = cursor.lastrowid
+        resource.id = new_id
+
+    def set_resource_verified(self, resource):
+        with self.conn:
+            self.conn.execute(
+                "UPDATE resources SET verified = ? WHERE id = ?",
+                (int(resource.verified), resource.id),
+            )
+
+    def load_communities(self, users_by_id):
+        """Rebuild every community with its members and resources.
+
+        users_by_id maps school_id -> the User objects the Platform already
+        holds, so members and uploaders are the same objects, not copies.
+        """
+        enrolled = {}
+        for community_id, school_id in self.conn.execute(
+                "SELECT community_id, school_id FROM enrollments"):
+            enrolled.setdefault(community_id, []).append(school_id)
+
+        communities = {}
+        for community_id, kind, name, detail in self.conn.execute(
+                "SELECT id, kind, name, detail FROM communities ORDER BY id").fetchall():
+            if kind == "CourseCommunity":
+                community = CourseCommunity(name, detail, enrolled.get(community_id, []))
+            elif kind == "DepartmentCommunity":
+                community = DepartmentCommunity(name, detail)
+            else:
+                raise ValueError(f"Unknown community type in database: {kind}")
+            community.id = community_id
+            communities[community_id] = community
+
+        # Memberships are restored directly. Going through add_member() would
+        # re-run the enrollment check and print "joined" messages.
+        for community_id, school_id in self.conn.execute(
+                "SELECT community_id, school_id FROM memberships ORDER BY rowid").fetchall():
+            community, user = communities.get(community_id), users_by_id.get(school_id)
+            if community is not None and user is not None:
+                community.members.append(user)
+                user.communities.append(community)
+
+        for (resource_id, community_id, kind, title, uploader_id,
+             verified, detail) in self.conn.execute(
+                "SELECT id, community_id, kind, title, uploader_id, verified, detail "
+                "FROM resources ORDER BY id").fetchall():
+            community, uploader = communities.get(community_id), users_by_id.get(uploader_id)
+            if community is None or uploader is None:
+                continue
+            if kind not in RESOURCE_KINDS:
+                raise ValueError(f"Unknown resource type in database: {kind}")
+            resource = RESOURCE_KINDS[kind][0](title, uploader, detail)
+            resource.id = resource_id
+            resource.verified = bool(verified)
+            community.resources.append(resource)
+
+        return list(communities.values())
 
     def close(self):
         self.conn.close()

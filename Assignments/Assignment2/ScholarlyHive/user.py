@@ -42,8 +42,9 @@ class User:
         if community.add_member(self):
             self.communities.append(community)
             print(f"  -> {self.name} joined {community.name}.")
-        else:
-            print(f"  -> {self.name} could not join {community.name}.")
+            return True
+        print(f"  -> {self.name} could not join {community.name}.")
+        return False
 
     def can_verify_resources(self):
         """Default permission: most users cannot verify/pin resources."""

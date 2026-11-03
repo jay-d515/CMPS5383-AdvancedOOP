@@ -10,6 +10,7 @@ class Community:
     """Parent class. Holds members and resources, open membership by default."""
 
     def __init__(self, name):
+        self.id = None         # assigned by Database when the community is saved
         self.name = name
         self.members = []      # composition: a Community has Users
         self.resources = []    # composition: a Community has Resources

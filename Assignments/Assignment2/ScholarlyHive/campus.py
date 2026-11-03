@@ -1,5 +1,5 @@
 """
-campus_platform.py
+campus.py
 Defines the Platform coordinator. This is what triggers and sequences
 interactions between User, Community, Resource, and Session objects -
 none of those classes act on their own.
@@ -8,9 +8,10 @@ Week 2 adds authentication: register_user() hashes passwords, login()
 verifies credentials and starts a Session, and validate_session() /
 logout() manage session lifetime.
 
-Week 3 adds persistence: if a Database is supplied, users and sessions are
-loaded from it at startup and written to it on every change (write-through).
-With no database the Platform behaves exactly as in Week 2 (in-memory only).
+Week 3/4 add persistence: if a Database is supplied, users, sessions,
+communities, memberships and resources are loaded from it at startup and
+written to it on every change (write-through). With no database the
+Platform behaves exactly as in Week 2 (in-memory only).
 """
 
 from datetime import timedelta
@@ -29,16 +30,20 @@ class Platform:
             self._load_from_database()
 
     def _load_from_database(self):
-        """Restore users and still-valid sessions saved by a previous run."""
+        """Restore users, communities (with members and resources), and
+        still-valid sessions saved by a previous run."""
         self.users = self.db.load_users()
         users_by_id = {u.school_id: u for u in self.users}
+        self.communities = self.db.load_communities(users_by_id)
         for session in self.db.load_sessions(users_by_id):
             if session.is_valid():
                 self.sessions[session.token] = session
                 session.user.logged_in = True
             else:
                 self.db.delete_session(session.token)  # drop stale rows
-        print(f"  -> Loaded {len(self.users)} user(s) and "
+        resource_count = sum(len(c.resources) for c in self.communities)
+        print(f"  -> Loaded {len(self.users)} user(s), {len(self.communities)} "
+              f"communit(ies), {resource_count} resource(s) and "
               f"{len(self.sessions)} active session(s) from the database.")
 
     # ---------------------------------------------------------------
@@ -64,8 +69,29 @@ class Platform:
         return True
 
     def register_community(self, community):
+        """Add a community. Names must be unique. Returns True on success."""
+        if any(c.name == community.name for c in self.communities):
+            print(f"  -> Community '{community.name}' already exists.")
+            return False
+        if self.db is not None:
+            self.db.save_community(community)
         self.communities.append(community)
         print(f"  -> Created community '{community.name}'.")
+        return True
+
+    def join_community(self, user, community):
+        """Coordinates a user joining a community, then saves the membership.
+        The community decides whether the join is allowed (add_member)."""
+        if user not in self.users:
+            print(f"  -> {user.name} must register before joining a community.")
+            return False
+        if community not in self.communities:
+            print(f"  -> '{community.name}' has not been registered on the platform.")
+            return False
+        joined = user.join_community(community)
+        if joined and self.db is not None:
+            self.db.save_membership(community, user)
+        return joined
 
     # ---------------------------------------------------------------
     # Authentication / sessions
@@ -115,20 +141,29 @@ class Platform:
             user.logout()
 
     # ---------------------------------------------------------------
-    # Week 1 coordination (unchanged)
+    # Posting and verifying (Week 4: saved to the database)
     # ---------------------------------------------------------------
     def post_resource(self, user, community, resource):
         """Coordinates a user posting a resource to a community they belong to."""
         if community not in user.communities:
             print(f"  -> {user.name} must join '{community.name}' before posting there.")
-            return
+            return False
+        if self.db is not None:
+            if community.id is None:
+                print(f"  -> '{community.name}' has not been registered on the platform.")
+                return False
+            self.db.save_resource(resource, community)  # sets resource.id
         community.post_resource(resource)
         print(f"  -> {user.name} posted '{resource.title}' to '{community.name}'.")
+        return True
 
     def verify_resource(self, user, resource):
         """Coordinates a privileged user verifying a resource."""
         if not user.can_verify_resources():
             print(f"  -> {user.name} does not have permission to verify resources.")
-            return
+            return False
         resource.verified = True
+        if self.db is not None and resource.id is not None:
+            self.db.set_resource_verified(resource)
         print(f"  -> {user.name} verified '{resource.title}'.")
+        return True
