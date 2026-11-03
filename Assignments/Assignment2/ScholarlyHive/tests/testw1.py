@@ -1,7 +1,7 @@
 """
 test_week1.py
 Week 1 milestone tests: core objects can be created and behave correctly.
-Run with:  python -m unittest test_week1.py -v
+Run with:  python -m unittest tests.testw1 -v
 """
 
 import unittest

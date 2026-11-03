@@ -1,78 +1,74 @@
 """
-main.py
-Entry point for CampusConnect (Week 2 demo).
+main.py  (Week 3 demo: persistence)
 
-Shows: password hashing at registration, login success/failure,
-session start and expiry, and that the Week 1 features (communities,
-posting, verification) still work behind an authenticated login.
+Run this script TWICE to see persistence across real restarts:
+
+    python main.py            # 1st run: creates users, logs Alice in
+    python main.py            # 2nd run: users are recognized from the database
+    python main.py --reset    # delete the database and start over
+
+The database file (scholarlyhive.db) is created next to this script.
 """
 
-from datetime import datetime, timedelta
+import os
+import sys
 
-from user import Student, Professor
-from community import DepartmentCommunity, CourseCommunity
-from resource import FileResource, DiscussionPost
+from database import Database
 from campus import Platform
+from user import Student, TA, Professor
+
+DB_FILE = "scholarlyhive.db"
+
+
+def seed_users(platform):
+    print("\n== First run: registering users ==")
+    platform.register_user(Student("Alice", "S1001", "alice@school.edu"), "alice-pw")
+    platform.register_user(Student("Bob", "S1002", "bob@school.edu"), "bob-pw")
+    platform.register_user(Professor("Dr. Lee", "P2001", "lee@school.edu"), "lee-pw")
+    platform.register_user(TA("Tim", "T3001", "tim@school.edu"), "tim-pw")
+
+
+def show_existing_users(platform):
+    print("\n== Restart detected: users loaded from the database ==")
+    for user in platform.users:
+        role = type(user).__name__
+        print(f"  {user.school_id:<6} {user.name:<8} {role:<10} "
+              f"verify={user.can_verify_resources()}  "
+              f"hash={user.password_hash[:30]}...")
+
+
+def main():
+    if "--reset" in sys.argv:
+        if os.path.exists(DB_FILE):
+            os.remove(DB_FILE)
+            print(f"Deleted {DB_FILE}.")
+        else:
+            print("Nothing to delete.")
+        return
+
+    print("Starting ScholarlyHive...")
+    db = Database(DB_FILE)
+    platform = Platform(database=db)
+
+    if platform.users:
+        show_existing_users(platform)
+    else:
+        seed_users(platform)
+
+    print("\n== Login ==")
+    platform.login("S1001", "wrong-password")           # rejected
+    session = platform.login("S1001", "alice-pw")       # accepted, session saved to DB
+    print(f"  Alice's session token: {session.token[:12]}...")
+
+    print("\n== Sessions stored in the database ==")
+    rows = db.conn.execute(
+        "SELECT school_id, substr(token, 1, 12), expires_at FROM sessions").fetchall()
+    for school_id, token, expires in rows:
+        print(f"  {school_id}  {token}...  expires {expires[:19]}")
+
+    print("\nDone. Run this script again - the users above will already exist.")
+    db.close()
 
 
 if __name__ == "__main__":
-    platform = Platform(session_minutes=30)
-
-    # --- Registration: passwords are hashed, never stored as plaintext ---
-    print("== Registration ==")
-    alice = Student("Alice", "S1001", "alice@school.edu")
-    bob = Student("Bob", "S1002", "bob@school.edu")
-    prof_lee = Professor("Dr. Lee", "P2001", "lee@school.edu")
-
-    platform.register_user(alice, password="alice-pass")
-    platform.register_user(bob, password="bob-pass")
-    platform.register_user(prof_lee, password="lee-pass")
-    platform.register_user(Student("Imposter", "S1001", "x@school.edu"), password="pw")
-
-    print(f"\n  Alice's stored value: {alice.password_hash[:45]}...")
-    print(f"  Bob's stored value:   {bob.password_hash[:45]}...")
-
-    # --- Login: wrong credentials rejected, correct ones start a session ---
-    print("\n== Login ==")
-    platform.login("S1001", "wrong-password")
-    platform.login("S9999", "alice-pass")
-    alice_session = platform.login("S1001", "alice-pass")
-    prof_session = platform.login("P2001", "lee-pass")
-
-    # --- Session validation ---
-    print("\n== Session validation ==")
-    user = platform.validate_session(alice_session.token)
-    print(f"  Token resolves to: {user}")
-
-    print("\n  (simulating 31 minutes passing...)")
-    alice_session.expires_at = datetime.now() - timedelta(seconds=1)
-    print(f"  Token resolves to: {platform.validate_session(alice_session.token)}")
-
-    print("\n  Alice logs in again:")
-    alice_session = platform.login("S1001", "alice-pass")
-
-    # --- Week 1 features, now behind authentication ---
-    print("\n== Communities and resources ==")
-    cs_dept = DepartmentCommunity("Computer Science", "CS")
-    oop_course = CourseCommunity("CMPS5383 - Advanced OOP", "CMPS5383",
-                                 enrolled_ids=["S1001", "P2001"])
-    platform.register_community(cs_dept)
-    platform.register_community(oop_course)
-
-    alice.join_community(oop_course)
-    bob.join_community(oop_course)        # rejected: not enrolled
-    prof_lee.join_community(oop_course)
-
-    notes = FileResource("Inheritance Notes", alice, "inheritance_notes.pdf")
-    question = DiscussionPost("Help with Assignment 1", alice, "Anyone stuck on matches()?")
-    platform.post_resource(alice, oop_course, notes)
-    platform.post_resource(alice, oop_course, question)
-    platform.verify_resource(prof_lee, notes)
-
-    print(f"\nResources in {oop_course.name}:")
-    oop_course.show_resources()
-
-    # --- Logout ---
-    print("\n== Logout ==")
-    platform.logout(prof_session.token)
-    print(f"  Dr. Lee's token resolves to: {platform.validate_session(prof_session.token)}")
+    main()

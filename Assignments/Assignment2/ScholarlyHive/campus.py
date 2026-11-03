@@ -7,6 +7,10 @@ none of those classes act on their own.
 Week 2 adds authentication: register_user() hashes passwords, login()
 verifies credentials and starts a Session, and validate_session() /
 logout() manage session lifetime.
+
+Week 3 adds persistence: if a Database is supplied, users and sessions are
+loaded from it at startup and written to it on every change (write-through).
+With no database the Platform behaves exactly as in Week 2 (in-memory only).
 """
 
 from datetime import timedelta
@@ -15,11 +19,27 @@ from session import Session
 
 
 class Platform:
-    def __init__(self, session_minutes=30):
+    def __init__(self, session_minutes=30, database=None):
         self.users = []
         self.communities = []
-        self.sessions = {}  # token -> Session (in-memory until Week 3)
+        self.sessions = {}  # token -> Session (in-memory copy of what is stored)
         self.session_duration = timedelta(minutes=session_minutes)
+        self.db = database
+        if self.db is not None:
+            self._load_from_database()
+
+    def _load_from_database(self):
+        """Restore users and still-valid sessions saved by a previous run."""
+        self.users = self.db.load_users()
+        users_by_id = {u.school_id: u for u in self.users}
+        for session in self.db.load_sessions(users_by_id):
+            if session.is_valid():
+                self.sessions[session.token] = session
+                session.user.logged_in = True
+            else:
+                self.db.delete_session(session.token)  # drop stale rows
+        print(f"  -> Loaded {len(self.users)} user(s) and "
+              f"{len(self.sessions)} active session(s) from the database.")
 
     # ---------------------------------------------------------------
     # Registration
@@ -38,6 +58,8 @@ class Platform:
         if password is not None:
             user.set_password(password)
         self.users.append(user)
+        if self.db is not None:
+            self.db.save_user(user)
         print(f"  -> Registered user {user.name}.")
         return True
 
@@ -60,6 +82,8 @@ class Platform:
         self._end_sessions_for(user)  # one active session per user
         session = Session(user, duration=self.session_duration)
         self.sessions[session.token] = session
+        if self.db is not None:
+            self.db.save_session(session)
         user.login()
         print(f"  -> {session}")
         return session
@@ -85,6 +109,8 @@ class Platform:
         expired = [t for t, s in self.sessions.items() if s.user is user]
         for token in expired:
             del self.sessions[token]
+        if self.db is not None:
+            self.db.delete_sessions_for(user.school_id)
         if expired and user.logged_in:
             user.logout()
 

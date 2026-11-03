@@ -18,6 +18,15 @@ class Session:
         self.start_time = start_time or datetime.now()
         self.expires_at = self.start_time + (duration or self.DEFAULT_DURATION)
 
+    @classmethod
+    def restore(cls, user, token, start_time, expires_at):
+        """Rebuild a session loaded from the database, keeping its original
+        token and times instead of generating new ones."""
+        session = cls(user, start_time=start_time)
+        session.token = token
+        session.expires_at = expires_at
+        return session
+
     def is_valid(self, now=None):
         """A session is valid until its expiration time passes."""
         now = now or datetime.now()
